@@ -1,6 +1,7 @@
 import streamlit as st
 from PIL import Image
 import numpy as np
+import tensorflow as tf
 
 from plots import (
     plot_confusion_matrix,
@@ -8,6 +9,8 @@ from plots import (
     plot_precision_recall,
     plot_sample_predictions
 )
+
+model = tf.keras.models.load_model("pneumonia_model.keras")
 
 # Sample ground truth labels (0 = Normal, 1 = Pneumonia)
 y_true = np.array([0, 1, 0, 1, 0, 1, 1, 0, 1, 0])
