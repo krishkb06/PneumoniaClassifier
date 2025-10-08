@@ -15,7 +15,7 @@ model = tf.keras.models.load_model("pneumonia_modelv1.keras")
 
 try:
     test_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        "chest_xray/test",  # <-- replace with your actual test folder
+        "chest_xray/test",  
         labels="inferred",
         label_mode="binary",
         image_size=(224, 224),
@@ -61,8 +61,16 @@ if uploaded_file is not None:
     # Open and display the image
     image = Image.open(uploaded_file).convert("L")
     image_resized = image.resize((224, 224))
-
     st.image(image_resized, caption="Uploaded X-ray", use_column_width=True)
 
-    # Placeholder for prediction logic
-    st.write("✅ Image successfully uploaded. Model prediction will go here.")
+    # Preprocess for model
+    img_array = np.array(image_resized) / 255.0
+    img_array = img_array.reshape(1, 224, 224, 1)  # batch + channel dims
+
+    # Run prediction
+    prob = model.predict(img_array)[0][0]
+    label = "Pneumonia" if prob > 0.5 else "Normal"
+
+    # Display results
+    st.success(f"🧠 Prediction: **{label}**")
+    st.write(f"📊 Confidence: **{prob:.2f}**")
