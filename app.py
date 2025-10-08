@@ -25,7 +25,7 @@ def load_test_ds():
         "chest_xray/test",
         labels="inferred",
         label_mode="binary",
-        image_size=(224, 224),
+        image_size=(256, 256),
         color_mode="grayscale",
         batch_size=32,
         shuffle=False
@@ -71,12 +71,12 @@ uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["jpg", "jpe
 if uploaded_file is not None:
     # Open and display the image
     image = Image.open(uploaded_file).convert("L")
-    image_resized = image.resize((224, 224))
+    image_resized = image.resize((256, 256))
     st.image(image_resized, caption="Uploaded X-ray", use_column_width=True)
 
     # Preprocess for model
     img_array = np.array(image_resized) / 255.0
-    img_array = img_array.reshape(1, 224, 224, 1)
+    img_array = img_array.reshape(1, 256, 256, 1)
 
     # Run prediction
     prob = model.predict(img_array)[0][0]
