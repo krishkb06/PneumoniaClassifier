@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from PIL import Image
 import numpy as np
@@ -10,12 +11,18 @@ from plots import (
     plot_sample_predictions
 )
 
-model = tf.keras.models.load_model("pneumonia_modelv1.keras")
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model("pneumonia_modelv1.keras")
 
-try:
-    test_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        "chest_xray/test",  
+model = load_model()
+
+@st.cache_resource
+def load_test_ds():
+    return tf.keras.preprocessing.image_dataset_from_directory(
+        "chest_xray/test",
         labels="inferred",
         label_mode="binary",
         image_size=(224, 224),
@@ -24,8 +31,12 @@ try:
         shuffle=False
     )
 
+
+try:
+    test_ds = load_test_ds()
+
     # Get true labels
-    y_true = np.concatenate([y for x, y in test_ds], axis=0)
+    y_true = np.concatenate([y for _, y in test_ds], axis=0)
 
     # Get predicted probabilities
     y_pred_probs = model.predict(test_ds)
@@ -42,19 +53,19 @@ try:
     st.subheader("Precision-Recall Curve")
     st.pyplot(plot_precision_recall(y_true, y_pred_probs))
 
-    # Optional: sample predictions grid
+    #Sample predictions grid
     for images, labels in test_ds.take(1):
         st.subheader("Sample Predictions")
         st.pyplot(plot_sample_predictions(images, labels, model, ["Normal", "Pneumonia"]))
 
+except FileNotFoundError:
+    st.warning("Test dataset not found. Place it under chest_xray/test/")
 except Exception as e:
-    st.warning("Test dataset not found or failed to load. Evaluation graphs skipped.")
-    st.text(str(e))
+    st.error(f"Error during evaluation: {e}")
     
 # Title
 st.title("Chest X-ray Classifier Demo")
 
-# File uploader
 uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
@@ -65,7 +76,7 @@ if uploaded_file is not None:
 
     # Preprocess for model
     img_array = np.array(image_resized) / 255.0
-    img_array = img_array.reshape(1, 224, 224, 1)  # batch + channel dims
+    img_array = img_array.reshape(1, 224, 224, 1)
 
     # Run prediction
     prob = model.predict(img_array)[0][0]
