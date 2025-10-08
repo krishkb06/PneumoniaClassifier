@@ -3,6 +3,7 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
+import random
 
 from plots import (
     plot_confusion_matrix,
@@ -30,7 +31,31 @@ def load_test_ds():
         batch_size=32,
         shuffle=False
     )
+    
+# Title
+st.title("Chest X-ray Classifier Demo")
 
+uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # Open and display the image
+    image = Image.open(uploaded_file).convert("L")
+    image_resized = image.resize((256, 256))
+    st.image(image_resized, caption="Uploaded X-ray", use_column_width=True)
+
+    # Preprocess for model
+    img_array = np.array(image_resized) / 255.0
+    img_array = img_array.reshape(1, 256, 256, 1)
+
+    # Run prediction
+    prob = model.predict(img_array)[0][0]
+    label = "Pneumonia" if prob > 0.5 else "Normal"
+
+    # Display results
+    st.success(f"🧠 Prediction: **{label}**")
+    st.write(f"📊 Confidence: **{prob:.2f}**")
+
+st.title("Model Performance Analysis Graphs")
 
 try:
     test_ds = load_test_ds()
@@ -62,26 +87,3 @@ except FileNotFoundError:
     st.warning("Test dataset not found. Place it under chest_xray/test/")
 except Exception as e:
     st.error(f"Error during evaluation: {e}")
-    
-# Title
-st.title("Chest X-ray Classifier Demo")
-
-uploaded_file = st.file_uploader("Upload a chest X-ray image", type=["jpg", "jpeg", "png"])
-
-if uploaded_file is not None:
-    # Open and display the image
-    image = Image.open(uploaded_file).convert("L")
-    image_resized = image.resize((256, 256))
-    st.image(image_resized, caption="Uploaded X-ray", use_column_width=True)
-
-    # Preprocess for model
-    img_array = np.array(image_resized) / 255.0
-    img_array = img_array.reshape(1, 256, 256, 1)
-
-    # Run prediction
-    prob = model.predict(img_array)[0][0]
-    label = "Pneumonia" if prob > 0.5 else "Normal"
-
-    # Display results
-    st.success(f"🧠 Prediction: **{label}**")
-    st.write(f"📊 Confidence: **{prob:.2f}**")
