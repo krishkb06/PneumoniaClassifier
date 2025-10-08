@@ -10,32 +10,46 @@ from plots import (
     plot_sample_predictions
 )
 
-model = tf.keras.models.load_model("pneumonia_model.keras")
+model = tf.keras.models.load_model("pneumonia_modelv1.keras")
 
-# Sample ground truth labels (0 = Normal, 1 = Pneumonia)
-y_true = np.array([0, 1, 0, 1, 0, 1, 1, 0, 1, 0])
 
-# Sample predicted probabilities
-y_pred_probs = np.array([0.10, 0.85, 0.40, 0.95, 0.20, 0.70, 0.80, 0.30, 0.65, 0.15])
+try:
+    test_ds = tf.keras.preprocessing.image_dataset_from_directory(
+        "chest_xray/test",  # <-- replace with your actual test folder
+        labels="inferred",
+        label_mode="binary",
+        image_size=(224, 224),
+        color_mode="grayscale",
+        batch_size=32,
+        shuffle=False
+    )
 
-# Thresholded predictions (using 0.5 cutoff)
-y_pred = (y_pred_probs > 0.5).astype("int32")
+    # Get true labels
+    y_true = np.concatenate([y for x, y in test_ds], axis=0)
 
-st.subheader("Confusion Matrix")
-st.pyplot(plot_confusion_matrix(y_true, y_pred, ["Normal", "Pneumonia"]))
+    # Get predicted probabilities
+    y_pred_probs = model.predict(test_ds)
 
-st.subheader("ROC Curve")
-st.pyplot(plot_roc(y_true, y_pred_probs))
+    # Convert to binary predictions
+    y_pred = (y_pred_probs > 0.5).astype("int32")
 
-st.subheader("Precision-Recall Curve")
-st.pyplot(plot_precision_recall(y_true, y_pred_probs))
+    st.subheader("Confusion Matrix")
+    st.pyplot(plot_confusion_matrix(y_true, y_pred, ["Normal", "Pneumonia"]))
 
-#not displaying this one right now as it requires my model and dataset which are not uploaded currently
-"""
-for images, labels in test_ds.take(1):
-    st.subheader("Sample Predictions")
-    st.pyplot(plot_sample_predictions(images, labels, model, ["Normal", "Pneumonia"]))
-"""
+    st.subheader("ROC Curve")
+    st.pyplot(plot_roc(y_true, y_pred_probs))
+
+    st.subheader("Precision-Recall Curve")
+    st.pyplot(plot_precision_recall(y_true, y_pred_probs))
+
+    # Optional: sample predictions grid
+    for images, labels in test_ds.take(1):
+        st.subheader("Sample Predictions")
+        st.pyplot(plot_sample_predictions(images, labels, model, ["Normal", "Pneumonia"]))
+
+except Exception as e:
+    st.warning("Test dataset not found or failed to load. Evaluation graphs skipped.")
+    st.text(str(e))
     
 # Title
 st.title("Chest X-ray Classifier Demo")

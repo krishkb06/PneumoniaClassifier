@@ -23,3 +23,6 @@ Thumbs.db
 *.h5
 pneumonia_model/
 
+# Ignore dataset folders
+chest_xray/
+
